@@ -1,6 +1,12 @@
 // Wait for the entire page to load before running the script
 document.addEventListener("DOMContentLoaded", () => {
 
+    // Set the current year in the footer
+    const yearElement = document.getElementById("year");
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+
     // Get the elements we need from the HTML
     const urlInput = document.getElementById("url-input");
     const searchBtn = document.getElementById("search-btn");

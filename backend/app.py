@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 # 1. Load environment variables
 load_dotenv()
 API_KEY = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY")
-GOOGLE_API_URL = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY}"
+GOOGLE_API_URL = f"https://safebrowsing.googleapis.com/v5/uris:search?key={API_KEY}"
 
 # 2. Setup the Flask App
 app = Flask(__name__)
-CORS(app)  # This allows your frontend to talk to this backend
+CORS(app)
 
 # 3. The Check Route
 @app.route('/api/check-url', methods=['POST'])
@@ -22,20 +22,10 @@ def check_url():
     if not url_to_check:
         return jsonify({"error": "URL is required"}), 400
 
-    # Prepare the payload for Google
+    # Prepare the payload for Google Safe Browsing v5 (Updated on 16th March 2026)
     payload = {
-        "client": {
-            "clientId": "authenticity-app",
-            "clientVersion": "1.0.0"
-        },
-        "threatInfo": {
-            "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
-            "platformTypes": ["ANY_PLATFORM"],
-            "threatEntryTypes": ["URL"],
-            "threatEntries": [
-                {"url": url_to_check}
-            ]
-        }
+        "uri": url_to_check,
+        "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"]
     }
 
     try:
@@ -43,12 +33,13 @@ def check_url():
         response = requests.post(GOOGLE_API_URL, json=payload)
         response_data = response.json()
         
-        # Check matches
-        matches = response_data.get('matches', [])
+        # Check if there are threats
+        # v5 API returns threat information in the response
+        threats = response_data.get('threats', [])
 
-        if matches:
+        if threats:
             # THREAT FOUND
-            threat_type = matches[0]['threatType']
+            threat_type = threats[0].get('threatType', 'UNKNOWN')
             return jsonify({
                 "status": "dangerous",
                 "title": "Dangerous Link Detected",
